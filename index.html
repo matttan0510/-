@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>グラウンドアナウンス</title>
+<meta name="description" content="少年野球の場内アナウンスを音声合成で読み上げるツール">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f3f6f1;
+  --surface:#ffffff;
+  --surface2:#e9efe7;
+  --ink:#1e2a24;
+  --ink-soft:#5a6b61;
+  --green:#2b6e4f;
+  --green-deep:#1c4d36;
+  --clay:#b3592e;
+  --lamp:#e8a13d;
+  --lamp-ink:#5c3d0a;
+  --line:#d3ddd2;
+  --danger:#b0402e;
+  --focus:#2b6e4f;
+  --shadow:0 1px 3px rgba(30,42,36,.12);
+}
+:root:not([data-theme="light"]){
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1a15;
+    --surface:#182620;
+    --surface2:#20312a;
+    --ink:#e9efe9;
+    --ink-soft:#9db3a6;
+    --green:#58a37c;
+    --green-deep:#7bc39c;
+    --clay:#d97a4d;
+    --lamp:#f0b155;
+    --lamp-ink:#2b1f06;
+    --line:#2c3d34;
+    --danger:#e07a63;
+    --focus:#58a37c;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1a15;
+  --surface:#182620;
+  --surface2:#20312a;
+  --ink:#e9efe9;
+  --ink-soft:#9db3a6;
+  --green:#58a37c;
+  --green-deep:#7bc39c;
+  --clay:#d97a4d;
+  --lamp:#f0b155;
+  --lamp-ink:#2b1f06;
+  --line:#2c3d34;
+  --danger:#e07a63;
+  --focus:#58a37c;
+  --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  margin:0;
+  padding-bottom:90px;
+}
+h1,h2,h3{font-family:"Zen Maru Gothic","Zen Kaku Gothic New",system-ui,sans-serif;text-wrap:balance;margin:0}
+header.app{
+  background:var(--green-deep);
+  color:#f6f3e8;
+  padding:14px 16px 12px;
+}
+:root[data-theme="dark"] header.app, :root:not([data-theme="light"]) header.app{background:#12291e}
+header.app h1{font-size:20px;font-weight:900;letter-spacing:.04em}
+header.app .sub{font-size:12px;opacity:.85;margin-top:2px}
+main{max-width:720px;margin:0 auto;padding:16px}
+
+/* tabs */
+nav.tabs{
+  position:fixed;bottom:0;left:0;right:0;z-index:20;
+  display:flex;background:var(--surface);
+  border-top:1px solid var(--line);
+  box-shadow:0 -2px 8px rgba(0,0,0,.08);
+}
+nav.tabs button{
+  flex:1;border:0;background:none;color:var(--ink-soft);
+  font-family:inherit;font-size:11px;font-weight:700;
+  padding:10px 2px 12px;cursor:pointer;
+}
+nav.tabs button .ic{display:block;font-size:20px;line-height:1.2}
+nav.tabs button[aria-selected="true"]{color:var(--green)}
+nav.tabs button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+
+section.pane{display:none}
+section.pane.active{display:block}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.card h2{font-size:15px;font-weight:700;color:var(--green);margin-bottom:8px;letter-spacing:.03em}
+.card h2 .en{font-size:10px;color:var(--ink-soft);font-weight:500;margin-left:6px;letter-spacing:.12em}
+
+label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin:8px 0 2px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;padding:9px 10px;
+  border:1px solid var(--line);border-radius:8px;
+  background:var(--surface2);color:var(--ink);
+  font-family:inherit;font-size:15px;
+}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{
+  outline:2px solid var(--focus);outline-offset:1px;
+}
+textarea{resize:vertical;min-height:64px;line-height:1.6}
+
+button.play,button.action{
+  font-family:"Zen Maru Gothic",inherit;
+  border:0;border-radius:10px;cursor:pointer;
+  font-weight:700;
+}
+button.play{
+  background:var(--lamp);color:var(--lamp-ink);
+  font-size:16px;padding:12px 18px;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:10px;
+}
+button.play:active{transform:translateY(1px)}
+button.play.small{width:auto;font-size:14px;padding:8px 14px;margin-top:0}
+button.action{
+  background:var(--green);color:#fff;
+  font-size:14px;padding:9px 14px;
+}
+button.ghost{
+  background:none;border:1px solid var(--line);color:var(--ink-soft);
+  border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;
+  padding:7px 12px;cursor:pointer;
+}
+button.stop{
+  background:var(--danger);color:#fff;border:0;border-radius:10px;
+  font-family:inherit;font-weight:700;font-size:14px;padding:9px 14px;cursor:pointer;
+}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>*{flex:1}
+.row>.fix{flex:0 0 auto}
+
+.preview{
+  background:var(--surface2);
+  border-left:4px solid var(--green);
+  border-radius:6px;
+  padding:10px 12px;
+  font-size:15px;
+  min-height:3em;
+  white-space:pre-wrap;
+}
+.preview:empty::before{content:"ここに読み上げる文が表示されます";color:var(--ink-soft);font-size:13px}
+
+/* batter screen */
+.attack-switch{display:flex;gap:8px;margin-bottom:12px}
+.attack-switch button{
+  flex:1;padding:10px;border-radius:10px;border:2px solid var(--line);
+  background:var(--surface);color:var(--ink-soft);
+  font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+}
+.attack-switch button[aria-pressed="true"]{
+  border-color:var(--green);background:var(--green);color:#fff;
+}
+ol.lineup{list-style:none;margin:0 0 12px;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+ol.lineup li{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-bottom:1px solid var(--line);
+  background:var(--surface);cursor:pointer;
+}
+ol.lineup li:last-child{border-bottom:0}
+ol.lineup li .num{
+  font-variant-numeric:tabular-nums;
+  font-weight:900;width:1.6em;text-align:center;color:var(--ink-soft);
+}
+ol.lineup li .pos{font-size:12px;color:var(--ink-soft);width:5.5em}
+ol.lineup li .nm{font-weight:700;flex:1}
+ol.lineup li .uni{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+ol.lineup li.now{
+  background:var(--lamp);color:var(--lamp-ink);
+}
+ol.lineup li.now .num,ol.lineup li.now .pos,ol.lineup li.now .uni{color:var(--lamp-ink)}
+
+/* roster table */
+table.roster{width:100%;border-collapse:collapse;font-size:14px}
+table.roster th{font-size:11px;color:var(--ink-soft);text-align:left;padding:2px 4px;font-weight:700}
+table.roster td{padding:2px 3px}
+table.roster input,table.roster select{padding:6px 6px;font-size:14px;border-radius:6px}
+table.roster .c-num{width:2.2em;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink-soft);font-weight:700}
+table.roster .c-uni{width:4.2em}
+table.roster .c-pos{width:7em}
+.scroll-x{overflow-x:auto}
+
+.note{font-size:12px;color:var(--ink-soft);margin-top:6px}
+.tag-help{font-size:12px;color:var(--ink-soft);background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.tag-help code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:12px}
+details.tpl{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--surface)}
+details.tpl summary{padding:9px 12px;font-weight:700;font-size:14px;cursor:pointer;color:var(--ink)}
+details.tpl .body{padding:0 12px 12px}
+.range-row{display:flex;align-items:center;gap:10px;margin:4px 0}
+.range-row input[type=range]{flex:1;accent-color:var(--green)}
+.range-row .val{font-variant-numeric:tabular-nums;width:3em;text-align:right;font-weight:700}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<header class="app">
+  <h1>⚾ グラウンドアナウンス</h1>
+  <div class="sub">少年野球のための場内アナウンス読み上げツール</div>
+</header>
+
+<main>
+
+<!-- ===== 進行タブ ===== -->
+<section class="pane active" id="pane-game">
+  <div class="card">
+    <h2>試合開始<span class="en">PRE-GAME</span></h2>
+    <label for="tournament">大会名（任意）</label>
+    <input type="text" id="tournament" placeholder="例：第◯回 ◯◯市少年野球大会">
+    <div class="preview" id="pv-greeting"></div>
+    <button class="play" data-speak="pv-greeting">▶ 開始アナウンス</button>
+  </div>
+
+  <div class="card">
+    <h2>スターティングメンバー発表<span class="en">LINEUP</span></h2>
+    <div class="preview" id="pv-lineup-top"></div>
+    <button class="play" data-speak="pv-lineup-top">▶ 先攻チームの発表</button>
+    <div class="preview" id="pv-lineup-bottom" style="margin-top:12px"></div>
+    <button class="play" data-speak="pv-lineup-bottom">▶ 後攻チームの発表</button>
+  </div>
+
+  <div class="card">
+    <h2>試合終了<span class="en">GAME SET</span></h2>
+    <div class="row">
+      <div><label for="score-top">先攻の得点</label><input type="number" id="score-top" min="0" value="0"></div>
+      <div><label for="score-bottom">後攻の得点</label><input type="number" id="score-bottom" min="0" value="0"></div>
+    </div>
+    <div class="preview" id="pv-gameset"></div>
+    <button class="play" data-speak="pv-gameset">▶ 試合終了アナウンス</button>
+  </div>
+
+  <div class="card">
+    <h2>その他のアナウンス<span class="en">MISC</span></h2>
+    <div id="misc-list"></div>
+  </div>
+</section>
+
+<!-- ===== 打席タブ ===== -->
+<section class="pane" id="pane-batter">
+  <div class="attack-switch" role="group" aria-label="攻撃中のチーム">
+    <button id="atk-top" aria-pressed="true">先攻が攻撃中</button>
+    <button id="atk-bottom" aria-pressed="false">後攻が攻撃中</button>
+  </div>
+  <ol class="lineup" id="batter-list"></ol>
+  <div class="preview" id="pv-batter"></div>
+  <button class="play" id="btn-batter">▶ この打者をアナウンス</button>
+  <div class="row" style="margin-top:10px">
+    <button class="ghost" id="btn-prev">← 前の打者</button>
+    <button class="ghost" id="btn-next">次の打者 →</button>
+  </div>
+  <p class="note">アナウンスすると自動で次の打者に進みます。リストをタップすると打者を選び直せます。</p>
+</section>
+
+<!-- ===== 交代タブ ===== -->
+<section class="pane" id="pane-sub">
+  <div class="card">
+    <h2>選手交代<span class="en">SUBSTITUTION</span></h2>
+    <label for="sub-team">チーム</label>
+    <select id="sub-team"></select>
+    <label for="sub-kind">交代の種類</label>
+    <select id="sub-kind">
+      <option value="pinchHit">代打</option>
+      <option value="pinchRun">代走</option>
+      <option value="pitcher">投手交代</option>
+      <option value="field">守備交代</option>
+    </select>
+    <div class="row">
+      <div><label for="sub-out">退く選手</label><select id="sub-out"></select></div>
+      <div><label for="sub-in">出場する選手</label><select id="sub-in"></select></div>
+    </div>
+    <div id="sub-pos-wrap" hidden>
+      <label for="sub-pos">守備位置</label>
+      <select id="sub-pos"></select>
+    </div>
+    <div class="preview" id="pv-sub"></div>
+    <button class="play" data-speak="pv-sub">▶ 交代アナウンス</button>
+  </div>
+  <div class="card">
+    <h2>自由入力<span class="en">FREE</span></h2>
+    <textarea id="free-text" placeholder="読み上げたい文章を自由に入力できます"></textarea>
+    <button class="play" id="btn-free">▶ 読み上げる</button>
+  </div>
+</section>
+
+<!-- ===== チームタブ ===== -->
+<section class="pane" id="pane-teams">
+  <div class="tag-help">
+    名前の漢字が正しく読まれないときは「よみ」欄にひらがなで入力してください。読み上げには「よみ」が優先されます。10行目以降は控え選手として交代画面で選べます。
+  </div>
+  <div id="team-editors"></div>
+  <div class="row">
+    <button class="action" id="btn-save-teams">保存</button>
+    <button class="ghost" id="btn-reset-teams">サンプルに戻す</button>
+  </div>
+</section>
+
+<!-- ===== 設定タブ ===== -->
+<section class="pane" id="pane-settings">
+  <div class="card">
+    <h2>音声<span class="en">VOICE</span></h2>
+    <label for="voice-select">声の種類（端末により異なります）</label>
+    <select id="voice-select"></select>
+    <div class="range-row"><span style="font-size:12px;font-weight:700;color:var(--ink-soft);width:3.5em">速さ</span><input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="0.9"><span class="val" id="rate-val">0.90</span></div>
+    <div class="range-row"><span style="font-size:12px;font-weight:700;color:var(--ink-soft);width:3.5em">高さ</span><input type="range" id="pitch" min="0.5" max="1.5" step="0.05" value="1.0"><span class="val" id="pitch-val">1.00</span></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--ink)">
+      <input type="checkbox" id="chime" checked style="width:auto"> アナウンスの前にチャイムを鳴らす
+    </label>
+    <div class="row" style="margin-top:10px">
+      <button class="action" id="btn-test">テスト再生</button>
+      <button class="stop" id="btn-stop">■ 停止</button>
+    </div>
+    <p class="note">iPhone / iPad は Safari、Android は Chrome での利用がおすすめです。声の種類は端末の設定でダウンロードした音声が表示されます。</p>
+  </div>
+
+  <div class="card">
+    <h2>アナウンス文の編集<span class="en">TEMPLATES</span></h2>
+    <div class="tag-help">
+      <code>{先攻チーム}</code> <code>{後攻チーム}</code> <code>{大会名}</code> <code>{打順}</code> <code>{守備位置}</code> <code>{選手名}</code> <code>{背番号}</code> などの部分には、自動で名前や数字が入ります。連盟のアナウンスマニュアルに合わせて自由に書き換えてください。
+    </div>
+    <div id="tpl-list"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="action" id="btn-save-tpl">文面を保存</button>
+      <button class="ghost" id="btn-reset-tpl">初期の文面に戻す</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<nav class="tabs" role="tablist" aria-label="画面切り替え">
+  <button role="tab" aria-selected="true" data-pane="pane-game"><span class="ic">📣</span>進行</button>
+  <button role="tab" aria-selected="false" data-pane="pane-batter"><span class="ic">🏏</span>打席</button>
+  <button role="tab" aria-selected="false" data-pane="pane-sub"><span class="ic">🔁</span>交代</button>
+  <button role="tab" aria-selected="false" data-pane="pane-teams"><span class="ic">👥</span>チーム</button>
+  <button role="tab" aria-selected="false" data-pane="pane-settings"><span class="ic">⚙️</span>設定</button>
+</nav>
+
+<script>
+"use strict";
+/* ---------- 定数・初期データ ---------- */
+const POSITIONS = ["ピッチャー","キャッチャー","ファースト","セカンド","サード","ショート","レフト","センター","ライト","DH","控え"];
+
+const SAMPLE_TEAMS = {
+  top: { name:"みどり台イーグルス", yomi:"みどりだいイーグルス", players:[
+    {no:"1", name:"佐藤 大翔", yomi:"さとう ひろと", pos:"ピッチャー"},
+    {no:"2", name:"鈴木 陽太", yomi:"すずき ようた", pos:"キャッチャー"},
+    {no:"3", name:"高橋 蓮", yomi:"たかはし れん", pos:"ファースト"},
+    {no:"4", name:"田中 湊", yomi:"たなか みなと", pos:"セカンド"},
+    {no:"5", name:"伊藤 悠真", yomi:"いとう ゆうま", pos:"サード"},
+    {no:"6", name:"渡辺 樹", yomi:"わたなべ いつき", pos:"ショート"},
+    {no:"7", name:"山本 朝陽", yomi:"やまもと あさひ", pos:"レフト"},
+    {no:"8", name:"中村 颯", yomi:"なかむら はやて", pos:"センター"},
+    {no:"9", name:"小林 律", yomi:"こばやし りつ", pos:"ライト"},
+    {no:"10", name:"加藤 新", yomi:"かとう あらた", pos:"控え"},
+    {no:"11", name:"吉田 奏太", yomi:"よしだ そうた", pos:"控え"}
+  ]},
+  bottom: { name:"かわさきファイターズ", yomi:"かわさきファイターズ", players:[
+    {no:"1", name:"山田 太一", yomi:"やまだ たいち", pos:"ピッチャー"},
+    {no:"2", name:"佐々木 遥人", yomi:"ささき はると", pos:"キャッチャー"},
+    {no:"3", name:"山口 陽向", yomi:"やまぐち ひなた", pos:"ファースト"},
+    {no:"4", name:"松本 大和", yomi:"まつもと やまと", pos:"セカンド"},
+    {no:"5", name:"井上 碧", yomi:"いのうえ あおい", pos:"サード"},
+    {no:"6", name:"木村 蒼", yomi:"きむら あお", pos:"ショート"},
+    {no:"7", name:"林 結翔", yomi:"はやし ゆいと", pos:"レフト"},
+    {no:"8", name:"斎藤 陸", yomi:"さいとう りく", pos:"センター"},
+    {no:"9", name:"清水 匠", yomi:"しみず たくみ", pos:"ライト"},
+    {no:"10", name:"森 悠人", yomi:"もり ゆうと", pos:"控え"}
+  ]}
+};
+
+const DEFAULT_TEMPLATES = {
+  greeting: {label:"試合開始", text:"お待たせいたしました。ただいまより、{大会名}{先攻チーム}対{後攻チーム}の試合を開始いたします。"},
+  lineupHeadTop: {label:"スタメン発表（先攻・前置き）", text:"先攻、{先攻チーム}のシートをお知らせいたします。"},
+  lineupHeadBottom: {label:"スタメン発表（後攻・前置き）", text:"続きまして後攻、{後攻チーム}のシートをお知らせいたします。"},
+  lineupPlayer: {label:"スタメン発表（選手1人分）", text:"{打順}番、{守備位置}、{選手名}くん。"},
+  batter: {label:"打者アナウンス", text:"{打順}番、{守備位置}、{選手名}くん。"},
+  pinchHit: {label:"代打", text:"{チーム}、バッターの交代をお知らせいたします。{元選手名}くんに代わりまして、{新選手名}くんです。"},
+  pinchRun: {label:"代走", text:"{チーム}、ランナーの交代をお知らせいたします。{元選手名}くんに代わりまして、{新選手名}くんです。"},
+  pitcherChange: {label:"投手交代", text:"{チーム}、選手の交代をお知らせいたします。ピッチャー、{元選手名}くんに代わりまして、{新選手名}くんです。"},
+  fieldChange: {label:"守備交代", text:"{チーム}、守備の交代をお知らせいたします。{守備位置}、{元選手名}くんに代わりまして、{新選手名}くんがはいります。"},
+  gameSet: {label:"試合終了", text:"ただいまの試合、{勝ち点}対{負け点}で、{勝ちチーム}が勝ちました。"},
+  gameSetDraw: {label:"試合終了（引き分け）", text:"ただいまの試合、{先攻点}対{後攻点}で、引き分けです。"}
+};
+
+const DEFAULT_MISC = [
+  {label:"整列", text:"両チームの選手のみなさんは、ベンチ前に整列してください。"},
+  {label:"ファウルボール注意", text:"球場にお越しのみなさまにお願いいたします。ファウルボールには十分ご注意ください。"},
+  {label:"応援のお願い", text:"応援のみなさまにお願いいたします。あたたかいご声援をよろしくお願いいたします。"},
+  {label:"グラウンド整備", text:"ただいまから、グラウンド整備を行います。しばらくお待ちください。"}
+];
+
+/* ---------- 状態 ---------- */
+function loadJSON(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(fallback));
+}
+function saveJSON(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+}
+
+let teams = loadJSON("ga-teams", SAMPLE_TEAMS);
+let templates = loadJSON("ga-templates", Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k,v])=>[k,v.text])));
+let misc = loadJSON("ga-misc", DEFAULT_MISC);
+let voiceCfg = loadJSON("ga-voice", {rate:0.9, pitch:1.0, voiceURI:"", chime:true});
+let attack = "top";
+let batterIdx = {top:0, bottom:0};
+
+/* ---------- ユーティリティ ---------- */
+const $ = s => document.querySelector(s);
+function speakName(p){ return (p.yomi && p.yomi.trim()) ? p.yomi.trim() : p.name; }
+function teamSpeakName(t){ return (t.yomi && t.yomi.trim()) ? t.yomi.trim() : t.name; }
+function lineup(t){ return t.players.slice(0,9).filter(p=>p.name.trim()); }
+function bench(t){ return t.players.slice(9).filter(p=>p.name.trim()); }
+
+function fill(tpl, map){
+  return tpl.replace(/\{([^}]+)\}/g, (m,k)=> (k in map ? map[k] : m));
+}
+function baseMap(){
+  return {
+    "大会名": $("#tournament").value.trim() ? $("#tournament").value.trim()+"、" : "",
+    "先攻チーム": teamSpeakName(teams.top),
+    "後攻チーム": teamSpeakName(teams.bottom)
+  };
+}
+
+/* ---------- 音声合成 ---------- */
+const synth = window.speechSynthesis;
+let voices = [];
+function refreshVoices(){
+  voices = synth ? synth.getVoices().filter(v=>v.lang.startsWith("ja")) : [];
+  if(!voices.length && synth) voices = synth.getVoices();
+  const sel = $("#voice-select");
+  sel.innerHTML = "";
+  if(!voices.length){
+    sel.innerHTML = "<option value=''>（日本語音声が見つかりません）</option>";
+    return;
+  }
+  for(const v of voices){
+    const o = document.createElement("option");
+    o.value = v.voiceURI;
+    o.textContent = `${v.name}（${v.lang}）`;
+    if(v.voiceURI === voiceCfg.voiceURI) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+if(synth){
+  refreshVoices();
+  synth.onvoiceschanged = refreshVoices;
+}
+
+let audioCtx = null;
+function playChime(){
+  return new Promise(res=>{
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const notes = [784, 659, 587, 523]; /* ピンポンパンポン風 */
+      const t0 = audioCtx.currentTime;
+      notes.forEach((f,i)=>{
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0+i*0.35);
+        g.gain.exponentialRampToValueAtTime(0.25, t0+i*0.35+0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0+i*0.35+0.5);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t0+i*0.35); o.stop(t0+i*0.35+0.55);
+      });
+      setTimeout(res, notes.length*350+400);
+    }catch(e){ res(); }
+  });
+}
+
+async function speak(text){
+  if(!text || !text.trim()) return;
+  if(!synth){ alert("このブラウザは音声合成に対応していません。"); return; }
+  synth.cancel();
+  if(voiceCfg.chime) await playChime();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  u.rate = voiceCfg.rate;
+  u.pitch = voiceCfg.pitch;
+  const v = voices.find(v=>v.voiceURI===voiceCfg.voiceURI);
+  if(v) u.voice = v;
+  synth.speak(u);
+}
+
+/* ---------- プレビュー描画 ---------- */
+function renderPreviews(){
+  $("#pv-greeting").textContent = fill(templates.greeting, baseMap());
+
+  for(const side of ["top","bottom"]){
+    const t = teams[side];
+    const head = fill(side==="top" ? templates.lineupHeadTop : templates.lineupHeadBottom, baseMap());
+    const lines = lineup(t).map(p=> fill(templates.lineupPlayer, {
+      "打順": String(t.players.indexOf(p)+1), "守備位置": p.pos, "選手名": speakName(p), "背番号": p.no
+    }));
+    $(side==="top" ? "#pv-lineup-top" : "#pv-lineup-bottom").textContent = [head, ...lines].join("\n");
+  }
+
+  const st = parseInt($("#score-top").value||"0",10), sb = parseInt($("#score-bottom").value||"0",10);
+  let gs;
+  if(st===sb){
+    gs = fill(templates.gameSetDraw, {...baseMap(), "先攻点":String(st), "後攻点":String(sb)});
+  }else{
+    const winSide = st>sb ? "top" : "bottom";
+    gs = fill(templates.gameSet, {...baseMap(),
+      "勝ちチーム": teamSpeakName(teams[winSide]),
+      "勝ち点": String(Math.max(st,sb)), "負け点": String(Math.min(st,sb))});
+  }
+  $("#pv-gameset").textContent = gs;
+  renderBatter();
+  renderSub();
+}
+
+/* ---------- 進行：その他 ---------- */
+function renderMisc(){
+  const wrap = $("#misc-list");
+  wrap.innerHTML = "";
+  misc.forEach((m,i)=>{
+    const div = document.createElement("div");
+    div.className = "row";
+    div.style.marginBottom = "8px";
+    const inp = document.createElement("input");
+    inp.type="text"; inp.value=m.text; inp.setAttribute("aria-label", m.label);
+    inp.addEventListener("change", ()=>{ misc[i].text = inp.value; saveJSON("ga-misc", misc); });
+    const btn = document.createElement("button");
+    btn.className="play small fix"; btn.textContent="▶";
+    btn.setAttribute("aria-label", m.label+"を読み上げ");
+    btn.addEventListener("click", ()=>speak(inp.value));
+    div.appendChild(inp); div.appendChild(btn);
+    wrap.appendChild(div);
+  });
+}
+
+/* ---------- 打席 ---------- */
+function renderBatter(){
+  const t = teams[attack];
+  const lu = lineup(t);
+  const list = $("#batter-list");
+  list.innerHTML = "";
+  if(batterIdx[attack] >= lu.length) batterIdx[attack] = 0;
+  lu.forEach((p,i)=>{
+    const li = document.createElement("li");
+    if(i===batterIdx[attack]) li.classList.add("now");
+    li.innerHTML = `<span class="num">${i+1}</span><span class="pos">${p.pos}</span><span class="nm">${p.name}</span><span class="uni">#${p.no}</span>`;
+    li.addEventListener("click", ()=>{ batterIdx[attack]=i; renderBatter(); });
+    list.appendChild(li);
+  });
+  const p = lu[batterIdx[attack]];
+  $("#pv-batter").textContent = p ? fill(templates.batter, {
+    "打順": String(batterIdx[attack]+1), "守備位置": p.pos, "選手名": speakName(p), "背番号": p.no
+  }) : "";
+  $("#atk-top").textContent = `${teams.top.name}（先攻）`;
+  $("#atk-bottom").textContent = `${teams.bottom.name}（後攻）`;
+}
+
+$("#btn-batter").addEventListener("click", ()=>{
+  const lu = lineup(teams[attack]);
+  if(!lu.length) return;
+  speak($("#pv-batter").textContent);
+  batterIdx[attack] = (batterIdx[attack]+1) % lu.length;
+  renderBatter();
+});
+$("#btn-prev").addEventListener("click", ()=>{
+  const n = lineup(teams[attack]).length || 1;
+  batterIdx[attack] = (batterIdx[attack]-1+n)%n; renderBatter();
+});
+$("#btn-next").addEventListener("click", ()=>{
+  const n = lineup(teams[attack]).length || 1;
+  batterIdx[attack] = (batterIdx[attack]+1)%n; renderBatter();
+});
+$("#atk-top").addEventListener("click", ()=>{ attack="top"; setAttackUI(); });
+$("#atk-bottom").addEventListener("click", ()=>{ attack="bottom"; setAttackUI(); });
+function setAttackUI(){
+  $("#atk-top").setAttribute("aria-pressed", attack==="top");
+  $("#atk-bottom").setAttribute("aria-pressed", attack==="bottom");
+  renderBatter();
+}
+
+/* ---------- 交代 ---------- */
+function renderSub(){
+  const teamSel = $("#sub-team");
+  const cur = teamSel.value || "top";
+  teamSel.innerHTML = `<option value="top">${teams.top.name}（先攻）</option><option value="bottom">${teams.bottom.name}（後攻）</option>`;
+  teamSel.value = cur;
+  const t = teams[teamSel.value];
+  const all = t.players.filter(p=>p.name.trim());
+  const outSel = $("#sub-out"), inSel = $("#sub-in");
+  const keep = [outSel.value, inSel.value];
+  outSel.innerHTML = all.map((p,i)=>`<option value="${i}">${p.name}（${p.pos}）</option>`).join("");
+  inSel.innerHTML  = all.map((p,i)=>`<option value="${i}">${p.name}（${p.pos}）</option>`).join("");
+  if(keep[0]) outSel.value = keep[0];
+  if(keep[1]) inSel.value = keep[1];
+  const posSel = $("#sub-pos");
+  if(!posSel.options.length) posSel.innerHTML = POSITIONS.slice(0,10).map(p=>`<option>${p}</option>`).join("");
+  updateSubPreview();
+}
+function updateSubPreview(){
+  const t = teams[$("#sub-team").value || "top"];
+  const all = t.players.filter(p=>p.name.trim());
+  const kind = $("#sub-kind").value;
+  $("#sub-pos-wrap").hidden = (kind!=="field");
+  const po = all[parseInt($("#sub-out").value||"0",10)];
+  const pi = all[parseInt($("#sub-in").value||"0",10)];
+  if(!po || !pi){ $("#pv-sub").textContent=""; return; }
+  const tplKey = {pinchHit:"pinchHit", pinchRun:"pinchRun", pitcher:"pitcherChange", field:"fieldChange"}[kind];
+  $("#pv-sub").textContent = fill(templates[tplKey], {
+    "チーム": teamSpeakName(t),
+    "元選手名": speakName(po), "新選手名": speakName(pi),
+    "守備位置": kind==="field" ? $("#sub-pos").value : po.pos,
+    "背番号": pi.no
+  });
+}
+["sub-team","sub-kind","sub-out","sub-in","sub-pos"].forEach(id=>{
+  $("#"+id).addEventListener("change", ()=>{ if(id==="sub-team") renderSub(); else updateSubPreview(); });
+});
+$("#btn-free").addEventListener("click", ()=>speak($("#free-text").value));
+
+/* ---------- チーム編集 ---------- */
+function renderTeamEditors(){
+  const wrap = $("#team-editors");
+  wrap.innerHTML = "";
+  for(const side of ["top","bottom"]){
+    const t = teams[side];
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h2>${side==="top"?"先攻":"後攻"}チーム<span class="en">${side==="top"?"AWAY":"HOME"}</span></h2>
+      <label>チーム名</label>
+      <input type="text" data-t="${side}" data-f="name" value="${escapeAttr(t.name)}">
+      <label>チーム名のよみ（読み上げ用・任意）</label>
+      <input type="text" data-t="${side}" data-f="yomi" value="${escapeAttr(t.yomi||"")}" placeholder="ひらがなで">
+      <div class="scroll-x" style="margin-top:10px">
+      <table class="roster">
+        <thead><tr><th></th><th>背番号</th><th>名前</th><th>よみ（任意）</th><th>守備</th></tr></thead>
+        <tbody>${t.players.map((p,i)=>rosterRow(side,p,i)).join("")}</tbody>
+      </table>
+      </div>
+      <button class="ghost" data-add="${side}" style="margin-top:8px">＋ 選手を追加</button>`;
+    wrap.appendChild(card);
+  }
+  wrap.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click", ()=>{
+    teams[b.dataset.add].players.push({no:"",name:"",yomi:"",pos:"控え"});
+    renderTeamEditors();
+  }));
+}
+function rosterRow(side,p,i){
+  const posOpts = POSITIONS.map(x=>`<option ${x===p.pos?"selected":""}>${x}</option>`).join("");
+  return `<tr>
+    <td class="c-num">${i+1}</td>
+    <td class="c-uni"><input type="text" data-t="${side}" data-i="${i}" data-f="no" value="${escapeAttr(p.no)}" aria-label="背番号"></td>
+    <td><input type="text" data-t="${side}" data-i="${i}" data-f="name" value="${escapeAttr(p.name)}" aria-label="名前"></td>
+    <td><input type="text" data-t="${side}" data-i="${i}" data-f="yomi" value="${escapeAttr(p.yomi||"")}" aria-label="よみ"></td>
+    <td class="c-pos"><select data-t="${side}" data-i="${i}" data-f="pos" aria-label="守備位置">${posOpts}</select></td>
+  </tr>`;
+}
+function escapeAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+
+function collectTeams(){
+  document.querySelectorAll("#team-editors [data-t]").forEach(el=>{
+    const t = teams[el.dataset.t];
+    if(el.dataset.i !== undefined){
+      t.players[parseInt(el.dataset.i,10)][el.dataset.f] = el.value;
+    }else{
+      t[el.dataset.f] = el.value;
+    }
+  });
+}
+$("#btn-save-teams").addEventListener("click", ()=>{
+  collectTeams();
+  saveJSON("ga-teams", teams);
+  renderPreviews();
+  alert("保存しました");
+});
+$("#btn-reset-teams").addEventListener("click", ()=>{
+  if(!confirm("入力した選手データを消して、サンプルに戻します。よろしいですか？")) return;
+  teams = JSON.parse(JSON.stringify(SAMPLE_TEAMS));
+  saveJSON("ga-teams", teams);
+  renderTeamEditors(); renderPreviews();
+});
+
+/* ---------- 設定：テンプレート ---------- */
+function renderTemplates(){
+  const wrap = $("#tpl-list");
+  wrap.innerHTML = "";
+  for(const [key, def] of Object.entries(DEFAULT_TEMPLATES)){
+    const d = document.createElement("details");
+    d.className = "tpl";
+    d.innerHTML = `<summary>${def.label}</summary><div class="body"><textarea data-tpl="${key}">${templates[key] ?? def.text}</textarea></div>`;
+    wrap.appendChild(d);
+  }
+}
+$("#btn-save-tpl").addEventListener("click", ()=>{
+  document.querySelectorAll("[data-tpl]").forEach(el=>{ templates[el.dataset.tpl] = el.value; });
+  saveJSON("ga-templates", templates);
+  renderPreviews();
+  alert("文面を保存しました");
+});
+$("#btn-reset-tpl").addEventListener("click", ()=>{
+  if(!confirm("文面を初期状態に戻します。よろしいですか？")) return;
+  templates = Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k,v])=>[k,v.text]));
+  saveJSON("ga-templates", templates);
+  renderTemplates(); renderPreviews();
+});
+
+/* ---------- 設定：音声 ---------- */
+$("#rate").value = voiceCfg.rate; $("#rate-val").textContent = Number(voiceCfg.rate).toFixed(2);
+$("#pitch").value = voiceCfg.pitch; $("#pitch-val").textContent = Number(voiceCfg.pitch).toFixed(2);
+$("#chime").checked = !!voiceCfg.chime;
+$("#rate").addEventListener("input", e=>{ voiceCfg.rate=parseFloat(e.target.value); $("#rate-val").textContent=voiceCfg.rate.toFixed(2); saveJSON("ga-voice",voiceCfg); });
+$("#pitch").addEventListener("input", e=>{ voiceCfg.pitch=parseFloat(e.target.value); $("#pitch-val").textContent=voiceCfg.pitch.toFixed(2); saveJSON("ga-voice",voiceCfg); });
+$("#chime").addEventListener("change", e=>{ voiceCfg.chime=e.target.checked; saveJSON("ga-voice",voiceCfg); });
+$("#voice-select").addEventListener("change", e=>{ voiceCfg.voiceURI=e.target.value; saveJSON("ga-voice",voiceCfg); });
+$("#btn-test").addEventListener("click", ()=>speak("こちらは、テスト放送です。マイクのテストを行っています。"));
+$("#btn-stop").addEventListener("click", ()=>{ if(synth) synth.cancel(); });
+
+/* ---------- 再生ボタン（プレビュー読み上げ） ---------- */
+document.querySelectorAll("[data-speak]").forEach(b=>{
+  b.addEventListener("click", ()=>speak(document.getElementById(b.dataset.speak).textContent));
+});
+
+/* ---------- 入力変更でプレビュー更新 ---------- */
+["tournament","score-top","score-bottom"].forEach(id=>{
+  $("#"+id).addEventListener("input", renderPreviews);
+});
+
+/* ---------- タブ ---------- */
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected", x===b));
+    document.querySelectorAll("section.pane").forEach(p=>p.classList.toggle("active", p.id===b.dataset.pane));
+    if(b.dataset.pane==="pane-teams") renderTeamEditors();
+    if(b.dataset.pane!=="pane-teams"){ collectTeams(); saveJSON("ga-teams", teams); renderPreviews(); }
+  });
+});
+
+/* ---------- 初期描画 ---------- */
+renderMisc();
+renderTemplates();
+renderTeamEditors();
+renderSub();
+renderPreviews();
+</script>
+</body>
+</html>
