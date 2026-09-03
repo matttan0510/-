@@ -616,7 +616,14 @@ async function speakGoogle(text, token){
         audioConfig:{audioEncoding:"MP3", speakingRate:voiceCfg.rate, pitch:(voiceCfg.pitch-1)*4}
       })
     });
-    if(!res.ok) throw new Error("Google API エラー（"+res.status+"）。APIキーと Text-to-Speech API の有効化を確認してください");
+    if(!res.ok){
+      let msg = "Google API エラー（"+res.status+"）。APIキーと Text-to-Speech API の有効化を確認してください";
+      try{
+        const err = await res.json();
+        if(err.error && err.error.message) msg = "Google API エラー（"+res.status+"）："+err.error.message;
+      }catch(e){}
+      throw new Error(msg);
+    }
     const data = await res.json();
     const bin = atob(data.audioContent);
     const bytes = new Uint8Array(bin.length);
@@ -638,7 +645,20 @@ async function speakEleven(text, token){
       headers:{"xi-api-key":voiceCfg.eKey, "Content-Type":"application/json"},
       body: JSON.stringify({text, model_id:"eleven_multilingual_v2"})
     });
-    if(!res.ok) throw new Error("ElevenLabs API エラー（"+res.status+"）。APIキーとボイスIDを確認してください");
+    if(!res.ok){
+      let msg = "ElevenLabs API エラー（"+res.status+"）";
+      try{
+        const err = await res.json();
+        const d = err.detail || err;
+        const st = d.status || "";
+        const m = (typeof d.message === "string" && d.message) || JSON.stringify(d);
+        if(st === "quota_exceeded") msg = "ElevenLabs のクレジットが不足しています。elevenlabs.io/app/subscription で今月の残量を確認してください";
+        else if(st === "detected_unusual_activity") msg = "ElevenLabs が不審なアクセスと判定し、無料枠を一時停止しています。VPNやプロキシをオフにして時間をおくか、ElevenLabs のサポートに連絡してください";
+        else if(st === "voice_not_found") msg = "指定したボイスIDが見つかりません。マイボイスに追加した声のIDか確認してください";
+        else msg += "：" + m;
+      }catch(e){}
+      throw new Error(msg);
+    }
     url = URL.createObjectURL(await res.blob());
     ttsCache.set(cacheKey, url);
   }
