@@ -321,12 +321,44 @@ details.tpl .body{padding:0 12px 12px}
 <section class="pane" id="pane-settings">
   <div class="card">
     <h2>音声<span class="en">VOICE</span></h2>
-    <label for="voice-select">声の種類（端末により異なります）</label>
-    <select id="voice-select"></select>
+    <label for="engine-select">音声エンジン</label>
+    <select id="engine-select">
+      <option value="device">端末の内蔵音声（無料・設定不要）</option>
+      <option value="google">Google Cloud 音声（高品質・APIキーが必要）</option>
+      <option value="elevenlabs">ElevenLabs（最も自然・APIキーが必要）</option>
+    </select>
+    <div id="engine-device">
+      <label for="voice-select">声の種類（端末により異なります）</label>
+      <select id="voice-select"></select>
+      <p class="note">内蔵音声をより自然にするには、端末に高品質音声を追加してください。iPhone / iPad：設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語 で「拡張」や Siri の声をダウンロードし、この一覧から選択。Android：設定 → テキスト読み上げ で Google の音声データを更新。</p>
+    </div>
+    <div id="engine-google" hidden>
+      <label for="g-key">Google Cloud APIキー</label>
+      <input type="password" id="g-key" autocomplete="off" placeholder="AIza…">
+      <label for="g-voice">声の種類</label>
+      <select id="g-voice">
+        <option value="ja-JP-Neural2-B">Neural2-B（女性・落ち着き）</option>
+        <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
+        <option value="ja-JP-Neural2-D">Neural2-D（男性・低め）</option>
+        <option value="ja-JP-Wavenet-A">Wavenet-A（女性）</option>
+        <option value="ja-JP-Wavenet-D">Wavenet-D（男性）</option>
+      </select>
+      <p class="note">Google Cloud で Text-to-Speech API を有効にして発行したAPIキーを入力してください。毎月100万文字までの無料枠があります。キーはこの端末のブラウザにのみ保存され、Google 以外には送信されません。※クラウド音声は GitHub Pages などで公開したページで利用できます（Claude アーティファクトのプレビュー上では動作しません）。</p>
+    </div>
+    <div id="engine-eleven" hidden>
+      <label for="e-key">ElevenLabs APIキー</label>
+      <input type="password" id="e-key" autocomplete="off" placeholder="sk_…">
+      <label for="e-voice">ボイスID</label>
+      <input type="text" id="e-voice" autocomplete="off" placeholder="ボイスライブラリで選んだ声のID">
+      <p class="note">ElevenLabs のボイスライブラリで「Japanese」「narration」などで検索し、アナウンサー風の声の Voice ID を貼り付けてください。無料プランでも月1万クレジットまで使えます。キーはこの端末のブラウザにのみ保存されます。※クラウド音声は GitHub Pages などで公開したページで利用できます（Claude アーティファクトのプレビュー上では動作しません）。</p>
+    </div>
     <div class="range-row"><span style="font-size:12px;font-weight:700;color:var(--ink-soft);width:3.5em">速さ</span><input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="0.9"><span class="val" id="rate-val">0.90</span></div>
     <div class="range-row"><span style="font-size:12px;font-weight:700;color:var(--ink-soft);width:3.5em">高さ</span><input type="range" id="pitch" min="0.5" max="1.5" step="0.05" value="1.0"><span class="val" id="pitch-val">1.00</span></div>
     <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--ink)">
       <input type="checkbox" id="chime" checked style="width:auto"> アナウンスの前にチャイムを鳴らす
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:var(--ink)">
+      <input type="checkbox" id="mapause" checked style="width:auto"> アナウンサー風の「間」をとる（文ごとにためを作る）
     </label>
     <div class="row" style="margin-top:10px">
       <button class="action" id="btn-test">テスト再生</button>
@@ -427,7 +459,11 @@ function saveJSON(key, val){
 let teams = loadJSON("ga-teams", SAMPLE_TEAMS);
 let templates = loadJSON("ga-templates", Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k,v])=>[k,v.text])));
 let misc = loadJSON("ga-misc", DEFAULT_MISC);
-let voiceCfg = loadJSON("ga-voice", {rate:0.9, pitch:1.0, voiceURI:"", chime:true});
+let voiceCfg = Object.assign(
+  {rate:0.9, pitch:1.0, voiceURI:"", chime:true, pauses:true,
+   engine:"device", gKey:"", gVoice:"ja-JP-Neural2-B", eKey:"", eVoice:""},
+  loadJSON("ga-voice", {})
+);
 let attack = "top";
 let batterIdx = {top:0, bottom:0};
 
@@ -496,18 +532,117 @@ function playChime(){
   });
 }
 
+let speakToken = 0;
+let currentAudio = null;
+function stopAll(){
+  speakToken++;
+  if(synth) synth.cancel();
+  if(currentAudio){ currentAudio.pause(); currentAudio = null; }
+}
+
 async function speak(text){
   if(!text || !text.trim()) return;
-  if(!synth){ alert("このブラウザは音声合成に対応していません。"); return; }
-  synth.cancel();
+  stopAll();
+  const token = speakToken;
   if(voiceCfg.chime) await playChime();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP";
-  u.rate = voiceCfg.rate;
-  u.pitch = voiceCfg.pitch;
-  const v = voices.find(v=>v.voiceURI===voiceCfg.voiceURI);
-  if(v) u.voice = v;
-  synth.speak(u);
+  if(token !== speakToken) return;
+  try{
+    if(voiceCfg.engine === "google") await speakGoogle(text, token);
+    else if(voiceCfg.engine === "elevenlabs") await speakEleven(text, token);
+    else await speakDevice(text, token);
+  }catch(err){
+    alert("クラウド音声の生成に失敗しました：" + err.message + "\n端末の内蔵音声で読み上げます。");
+    if(token === speakToken) await speakDevice(text, token);
+  }
+}
+
+/* 文の区切りで「間」をとった読み上げ（内蔵音声用） */
+function segments(text){
+  if(!voiceCfg.pauses) return [text.trim()];
+  const out = [];
+  let buf = "";
+  for(const ch of text){
+    buf += ch;
+    if("。！？\n".includes(ch)){ if(buf.trim()) out.push(buf.trim()); buf = ""; }
+  }
+  if(buf.trim()) out.push(buf.trim());
+  return out;
+}
+
+function speakDevice(text, token){
+  return new Promise(resolve=>{
+    if(!synth){ alert("このブラウザは音声合成に対応していません。"); resolve(); return; }
+    const segs = segments(text);
+    let i = 0;
+    const next = ()=>{
+      if(token !== speakToken || i >= segs.length){ resolve(); return; }
+      const u = new SpeechSynthesisUtterance(segs[i++]);
+      u.lang = "ja-JP";
+      u.rate = voiceCfg.rate;
+      u.pitch = voiceCfg.pitch;
+      const v = voices.find(v=>v.voiceURI===voiceCfg.voiceURI);
+      if(v) u.voice = v;
+      u.onend = ()=> setTimeout(next, voiceCfg.pauses ? 450 : 0);
+      u.onerror = ()=> resolve();
+      synth.speak(u);
+    };
+    next();
+  });
+}
+
+/* クラウド音声：生成結果はテキストごとにキャッシュして無駄な課金を防ぐ */
+const ttsCache = new Map();
+function playBlobUrl(url, token){
+  return new Promise((resolve, reject)=>{
+    if(token !== speakToken){ resolve(); return; }
+    const a = new Audio(url);
+    currentAudio = a;
+    a.onended = ()=>{ currentAudio = null; resolve(); };
+    a.onerror = ()=> reject(new Error("音声の再生に失敗しました"));
+    a.play().catch(reject);
+  });
+}
+
+async function speakGoogle(text, token){
+  if(!voiceCfg.gKey) throw new Error("Google Cloud のAPIキーが未入力です（設定タブ）");
+  const cacheKey = "g|"+voiceCfg.gVoice+"|"+voiceCfg.rate+"|"+voiceCfg.pitch+"|"+text;
+  let url = ttsCache.get(cacheKey);
+  if(!url){
+    const res = await fetch("https://texttospeech.googleapis.com/v1/text:synthesize?key="+encodeURIComponent(voiceCfg.gKey), {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        input:{text},
+        voice:{languageCode:"ja-JP", name:voiceCfg.gVoice},
+        audioConfig:{audioEncoding:"MP3", speakingRate:voiceCfg.rate, pitch:(voiceCfg.pitch-1)*4}
+      })
+    });
+    if(!res.ok) throw new Error("Google API エラー（"+res.status+"）。APIキーと Text-to-Speech API の有効化を確認してください");
+    const data = await res.json();
+    const bin = atob(data.audioContent);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    url = URL.createObjectURL(new Blob([bytes], {type:"audio/mpeg"}));
+    ttsCache.set(cacheKey, url);
+  }
+  await playBlobUrl(url, token);
+}
+
+async function speakEleven(text, token){
+  if(!voiceCfg.eKey) throw new Error("ElevenLabs のAPIキーが未入力です（設定タブ）");
+  if(!voiceCfg.eVoice) throw new Error("ElevenLabs のボイスIDが未入力です（設定タブ）");
+  const cacheKey = "e|"+voiceCfg.eVoice+"|"+text;
+  let url = ttsCache.get(cacheKey);
+  if(!url){
+    const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(voiceCfg.eVoice), {
+      method:"POST",
+      headers:{"xi-api-key":voiceCfg.eKey, "Content-Type":"application/json"},
+      body: JSON.stringify({text, model_id:"eleven_multilingual_v2"})
+    });
+    if(!res.ok) throw new Error("ElevenLabs API エラー（"+res.status+"）。APIキーとボイスIDを確認してください");
+    url = URL.createObjectURL(await res.blob());
+    ttsCache.set(cacheKey, url);
+  }
+  await playBlobUrl(url, token);
 }
 
 /* ---------- プレビュー描画 ---------- */
@@ -737,8 +872,27 @@ $("#rate").addEventListener("input", e=>{ voiceCfg.rate=parseFloat(e.target.valu
 $("#pitch").addEventListener("input", e=>{ voiceCfg.pitch=parseFloat(e.target.value); $("#pitch-val").textContent=voiceCfg.pitch.toFixed(2); saveJSON("ga-voice",voiceCfg); });
 $("#chime").addEventListener("change", e=>{ voiceCfg.chime=e.target.checked; saveJSON("ga-voice",voiceCfg); });
 $("#voice-select").addEventListener("change", e=>{ voiceCfg.voiceURI=e.target.value; saveJSON("ga-voice",voiceCfg); });
-$("#btn-test").addEventListener("click", ()=>speak("こちらは、テスト放送です。マイクのテストを行っています。"));
-$("#btn-stop").addEventListener("click", ()=>{ if(synth) synth.cancel(); });
+$("#btn-test").addEventListener("click", ()=>speak("こちらは、テスト放送です。ただいま、マイクのテストを行っています。"));
+$("#btn-stop").addEventListener("click", stopAll);
+
+$("#mapause").checked = !!voiceCfg.pauses;
+$("#mapause").addEventListener("change", e=>{ voiceCfg.pauses=e.target.checked; saveJSON("ga-voice",voiceCfg); });
+$("#engine-select").value = voiceCfg.engine;
+$("#g-key").value = voiceCfg.gKey;
+$("#g-voice").value = voiceCfg.gVoice;
+$("#e-key").value = voiceCfg.eKey;
+$("#e-voice").value = voiceCfg.eVoice;
+function syncEngineUI(){
+  $("#engine-device").hidden = voiceCfg.engine !== "device";
+  $("#engine-google").hidden = voiceCfg.engine !== "google";
+  $("#engine-eleven").hidden = voiceCfg.engine !== "elevenlabs";
+}
+syncEngineUI();
+$("#engine-select").addEventListener("change", e=>{ voiceCfg.engine=e.target.value; saveJSON("ga-voice",voiceCfg); syncEngineUI(); });
+$("#g-key").addEventListener("change", e=>{ voiceCfg.gKey=e.target.value.trim(); saveJSON("ga-voice",voiceCfg); });
+$("#g-voice").addEventListener("change", e=>{ voiceCfg.gVoice=e.target.value; saveJSON("ga-voice",voiceCfg); });
+$("#e-key").addEventListener("change", e=>{ voiceCfg.eKey=e.target.value.trim(); saveJSON("ga-voice",voiceCfg); });
+$("#e-voice").addEventListener("change", e=>{ voiceCfg.eVoice=e.target.value.trim(); saveJSON("ga-voice",voiceCfg); });
 
 /* ---------- 再生ボタン（プレビュー読み上げ） ---------- */
 document.querySelectorAll("[data-speak]").forEach(b=>{
