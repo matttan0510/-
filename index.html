@@ -337,11 +337,21 @@ details.tpl .body{padding:0 12px 12px}
       <input type="password" id="g-key" autocomplete="off" placeholder="AIza…">
       <label for="g-voice">声の種類</label>
       <select id="g-voice">
-        <option value="ja-JP-Neural2-B">Neural2-B（女性・落ち着き）</option>
-        <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
-        <option value="ja-JP-Neural2-D">Neural2-D（男性・低め）</option>
-        <option value="ja-JP-Wavenet-A">Wavenet-A（女性）</option>
-        <option value="ja-JP-Wavenet-D">Wavenet-D（男性）</option>
+        <optgroup label="Chirp 3: HD（最新・最も自然）">
+          <option value="ja-JP-Chirp3-HD-Kore">Kore（女性・はきはき）</option>
+          <option value="ja-JP-Chirp3-HD-Aoede">Aoede（女性・軽やか）</option>
+          <option value="ja-JP-Chirp3-HD-Leda">Leda（女性・若々しい）</option>
+          <option value="ja-JP-Chirp3-HD-Charon">Charon（男性・落ち着き）</option>
+          <option value="ja-JP-Chirp3-HD-Orus">Orus（男性・しっかり）</option>
+          <option value="ja-JP-Chirp3-HD-Puck">Puck（男性・明るい）</option>
+        </optgroup>
+        <optgroup label="Neural2 / Wavenet（従来）">
+          <option value="ja-JP-Neural2-B">Neural2-B（女性・落ち着き）</option>
+          <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
+          <option value="ja-JP-Neural2-D">Neural2-D（男性・低め）</option>
+          <option value="ja-JP-Wavenet-A">Wavenet-A（女性）</option>
+          <option value="ja-JP-Wavenet-D">Wavenet-D（男性）</option>
+        </optgroup>
       </select>
       <p class="note">Google Cloud で Text-to-Speech API を有効にして発行したAPIキーを入力してください。毎月100万文字までの無料枠があります。キーはこの端末のブラウザにのみ保存され、Google 以外には送信されません。※クラウド音声は GitHub Pages などで公開したページで利用できます（Claude アーティファクトのプレビュー上では動作しません）。</p>
     </div>
@@ -613,7 +623,10 @@ async function speakGoogle(text, token){
       body: JSON.stringify({
         input:{text},
         voice:{languageCode:"ja-JP", name:voiceCfg.gVoice},
-        audioConfig:{audioEncoding:"MP3", speakingRate:voiceCfg.rate, pitch:(voiceCfg.pitch-1)*4}
+        /* Chirp3-HD はピッチ指定非対応のため速さのみ送る */
+        audioConfig: voiceCfg.gVoice.includes("Chirp3")
+          ? {audioEncoding:"MP3", speakingRate:voiceCfg.rate}
+          : {audioEncoding:"MP3", speakingRate:voiceCfg.rate, pitch:(voiceCfg.pitch-1)*4}
       })
     });
     if(!res.ok){
