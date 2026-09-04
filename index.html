@@ -255,6 +255,7 @@ details.tpl .body{padding:0 12px 12px}
   <div class="card">
     <h2>その他のアナウンス<span class="en">MISC</span></h2>
     <div id="misc-list"></div>
+    <button class="play" id="btn-fanfare" style="margin-top:4px">🎺 ファンファーレ（攻撃チャンス）</button>
   </div>
 </section>
 
@@ -370,6 +371,9 @@ details.tpl .body{padding:0 12px 12px}
     <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:var(--ink)">
       <input type="checkbox" id="mapause" checked style="width:auto"> アナウンサー風の「間」をとる（文ごとにためを作る）
     </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:var(--ink)">
+      <input type="checkbox" id="echo" checked style="width:auto"> スタジアムエコー（球場の残響を再現・クラウド音声のみ）
+    </label>
     <div class="row" style="margin-top:10px">
       <button class="action" id="btn-test">テスト再生</button>
       <button class="stop" id="btn-stop">■ 停止</button>
@@ -385,8 +389,10 @@ details.tpl .body{padding:0 12px 12px}
     <div id="tpl-list"></div>
     <div class="row" style="margin-top:10px">
       <button class="action" id="btn-save-tpl">文面を保存</button>
+      <button class="ghost" id="btn-pro-tpl">プロ野球風の文面にする</button>
       <button class="ghost" id="btn-reset-tpl">初期の文面に戻す</button>
     </div>
+    <p class="note">「プロ野球風」は、守備位置と選手名を繰り返して最後に背番号を読む、プロの球場と同じ形式です（例：4番、サード、佐藤くん。サード、佐藤くん、背番号、5）。</p>
   </div>
 </section>
 
@@ -470,10 +476,19 @@ let teams = loadJSON("ga-teams", SAMPLE_TEAMS);
 let templates = loadJSON("ga-templates", Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k,v])=>[k,v.text])));
 let misc = loadJSON("ga-misc", DEFAULT_MISC);
 let voiceCfg = Object.assign(
-  {rate:0.9, pitch:1.0, voiceURI:"", chime:true, pauses:true,
+  {rate:0.9, pitch:1.0, voiceURI:"", chime:true, pauses:true, echo:true,
    engine:"device", gKey:"", gVoice:"ja-JP-Neural2-B", eKey:"", eVoice:""},
   loadJSON("ga-voice", {})
 );
+
+/* プロ野球式の文面（繰り返し＋背番号読み） */
+const PRO_TEMPLATES = {
+  lineupPlayer: "{打順}番、{守備位置}、{選手名}くん、背番号、{背番号}。",
+  batter: "{打順}番、{守備位置}、{選手名}くん。{守備位置}、{選手名}くん、背番号、{背番号}。",
+  pitcherChange: "{チーム}、選手の交代をお知らせいたします。ピッチャー、{元選手名}くんに代わりまして、{新選手名}くん。ピッチャーは、{新選手名}くん、背番号、{背番号}。",
+  pinchHit: "{チーム}、バッターの交代をお知らせいたします。{元選手名}くんに代わりまして、{新選手名}くん。バッターは、{新選手名}くん、背番号、{背番号}。",
+  gameSet: "ただいまの試合、{勝ち点}対{負け点}をもちまして、{勝ちチーム}の勝利です。"
+};
 let attack = "top";
 let batterIdx = {top:0, bottom:0};
 
@@ -607,10 +622,49 @@ function playBlobUrl(url, token){
     if(token !== speakToken){ resolve(); return; }
     const a = new Audio(url);
     currentAudio = a;
-    a.onended = ()=>{ currentAudio = null; resolve(); };
+    if(voiceCfg.echo){
+      try{
+        if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        audioCtx.resume();
+        const src = audioCtx.createMediaElementSource(a);
+        const dry = audioCtx.createGain(); dry.gain.value = 1.0;
+        const delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.17;
+        const fb = audioCtx.createGain(); fb.gain.value = 0.32;
+        const wet = audioCtx.createGain(); wet.gain.value = 0.28;
+        src.connect(dry); dry.connect(audioCtx.destination);
+        src.connect(delay); delay.connect(fb); fb.connect(delay);
+        delay.connect(wet); wet.connect(audioCtx.destination);
+      }catch(e){}
+    }
+    /* エコー使用時は残響の余韻ぶん待ってから完了にする */
+    a.onended = ()=>{ currentAudio = null; setTimeout(resolve, voiceCfg.echo ? 700 : 0); };
     a.onerror = ()=> reject(new Error("音声の再生に失敗しました"));
     a.play().catch(reject);
   });
+}
+
+function playFanfare(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx.resume();
+    /* チャージファンファーレ：ソ ド ミ ソー ミ ソー */
+    const seq = [
+      [392.0,0.00,0.16],[523.25,0.18,0.16],[659.25,0.36,0.16],
+      [784.0,0.54,0.34],[659.25,0.92,0.16],[784.0,1.10,0.55]
+    ];
+    const t0 = audioCtx.currentTime + 0.05;
+    for(const [f,at,dur] of seq){
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "square"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0+at);
+      g.gain.exponentialRampToValueAtTime(0.16, t0+at+0.02);
+      g.gain.setValueAtTime(0.16, t0+at+dur*0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+at+dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0+at); o.stop(t0+at+dur+0.05);
+    }
+  }catch(e){}
 }
 
 async function speakGoogle(text, token){
@@ -896,6 +950,13 @@ $("#btn-reset-tpl").addEventListener("click", ()=>{
   saveJSON("ga-templates", templates);
   renderTemplates(); renderPreviews();
 });
+$("#btn-pro-tpl").addEventListener("click", ()=>{
+  if(!confirm("打者・スタメン・交代の文面をプロ野球式（繰り返し＋背番号読み）に置き換えます。よろしいですか？")) return;
+  Object.assign(templates, PRO_TEMPLATES);
+  saveJSON("ga-templates", templates);
+  renderTemplates(); renderPreviews();
+});
+$("#btn-fanfare").addEventListener("click", playFanfare);
 
 /* ---------- 設定：音声 ---------- */
 $("#rate").value = voiceCfg.rate; $("#rate-val").textContent = Number(voiceCfg.rate).toFixed(2);
@@ -910,6 +971,8 @@ $("#btn-stop").addEventListener("click", stopAll);
 
 $("#mapause").checked = !!voiceCfg.pauses;
 $("#mapause").addEventListener("change", e=>{ voiceCfg.pauses=e.target.checked; saveJSON("ga-voice",voiceCfg); });
+$("#echo").checked = !!voiceCfg.echo;
+$("#echo").addEventListener("change", e=>{ voiceCfg.echo=e.target.checked; saveJSON("ga-voice",voiceCfg); });
 $("#engine-select").value = voiceCfg.engine;
 $("#g-key").value = voiceCfg.gKey;
 $("#g-voice").value = voiceCfg.gVoice;
