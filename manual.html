@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>グラウンドアナウンス 使い方ガイド</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f3f6f1; --surface:#ffffff; --surface2:#e9efe7;
+  --ink:#1e2a24; --ink-soft:#5a6b61;
+  --green:#2b6e4f; --green-deep:#1c4d36;
+  --lamp:#e8a13d; --lamp-ink:#5c3d0a;
+  --line:#d3ddd2;
+}
+:root:not([data-theme="light"]){ color-scheme:light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1a15; --surface:#182620; --surface2:#20312a;
+    --ink:#e9efe9; --ink-soft:#9db3a6;
+    --green:#58a37c; --green-deep:#7bc39c;
+    --lamp:#f0b155; --lamp-ink:#2b1f06;
+    --line:#2c3d34;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1a15; --surface:#182620; --surface2:#20312a;
+  --ink:#e9efe9; --ink-soft:#9db3a6;
+  --green:#58a37c; --green-deep:#7bc39c;
+  --lamp:#f0b155; --lamp-ink:#2b1f06;
+  --line:#2c3d34;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  font-size:15px; line-height:1.9;
+}
+header{
+  background:var(--green-deep); color:#f6f3e8; padding:26px 16px 22px;
+}
+:root[data-theme="dark"] header, :root:not([data-theme="light"]) header{background:#12291e}
+header h1{font-family:"Zen Maru Gothic",sans-serif;font-size:24px;font-weight:900;margin:0;letter-spacing:.04em;text-wrap:balance}
+header p{margin:6px 0 0;font-size:13px;opacity:.9}
+header .inner, main{max-width:680px;margin:0 auto}
+main{padding:20px 16px 60px}
+h2{
+  font-family:"Zen Maru Gothic",sans-serif;font-size:18px;font-weight:900;color:var(--green);
+  margin:38px 0 10px;letter-spacing:.03em;text-wrap:balance;
+  border-bottom:2px solid var(--line);padding-bottom:6px;
+}
+h3{font-size:15px;font-weight:700;margin:22px 0 6px}
+p{margin:8px 0}
+ol,ul{padding-left:1.4em;margin:8px 0}
+li{margin:4px 0}
+.box{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:14px 16px; margin:14px 0;
+}
+.point{
+  background:var(--surface2); border-left:4px solid var(--lamp);
+  border-radius:6px; padding:10px 14px; margin:14px 0; font-size:14px;
+}
+.say{
+  background:var(--surface2); border-left:4px solid var(--green);
+  border-radius:6px; padding:10px 14px; margin:10px 0; font-size:14px;
+}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2);font-size:13px}
+.wrap-x{overflow-x:auto}
+kbd,code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}
+a{color:var(--green);font-weight:700}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:18px 0;font-size:14px}
+.toc ol{margin:4px 0}
+footer{max-width:680px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <h1>⚾ グラウンドアナウンス 使い方ガイド</h1>
+    <p>少年野球の試合を、プロ野球のような場内アナウンスで盛り上げるための無料ツールです。</p>
+  </div>
+</header>
+<main>
+
+<div class="toc">
+<strong>もくじ</strong>
+<ol>
+  <li>まず使ってみる（1分）</li>
+  <li>試合前日の準備</li>
+  <li>試合当日の操作</li>
+  <li>声をプロ品質にする（任意・無料）</li>
+  <li>よくある質問</li>
+</ol>
+</div>
+
+<h2>1. まず使ってみる（1分）</h2>
+<ol>
+  <li>アプリのURLを、パソコンまたはスマホのブラウザで開きます（iPhoneはSafari、Android・パソコンはChrome推奨）</li>
+  <li>下の「<strong>進行</strong>」タブにある「▶ 先攻チームの発表」を押してみてください</li>
+  <li>チャイムのあと、サンプルチームのスタメン発表が読み上げられれば準備OKです</li>
+</ol>
+<div class="point">
+音が出ないときは、端末の音量と消音モード（iPhoneの横のスイッチ）を確認してください。設定なしで使える「内蔵音声」は端末によって声が変わります。
+</div>
+<p>スマホの場合は、ブラウザのメニューから「ホーム画面に追加」をしておくと、次からアプリのようにワンタップで開けます。</p>
+
+<h2>2. 試合前日の準備</h2>
+<h3>選手を登録する</h3>
+<ol>
+  <li>「<strong>チーム</strong>」タブを開く</li>
+  <li>先攻・後攻それぞれのチーム名と、選手の背番号・名前・守備位置を入力（1〜9行目がスタメン、10行目以降が控え）</li>
+  <li>読み方が難しい名前は「<strong>よみ</strong>」欄にひらがなで入力（読み上げはよみが優先されます）</li>
+  <li>「<strong>保存</strong>」を押す</li>
+</ol>
+<div class="point">
+入力したデータは<strong>その端末のそのブラウザ</strong>に保存されます。試合当日に使う端末で入力してください。
+</div>
+<h3>アナウンスの文面を確認する</h3>
+<p>「<strong>設定</strong>」タブの「アナウンス文の編集」で、すべての文面を書き換えられます。<code>{選手名}</code> や <code>{打順}</code> の部分には自動で名前や数字が入ります。所属連盟のアナウンスマニュアルがある場合は、その文言に合わせておきましょう。</p>
+
+<h2>3. 試合当日の操作</h2>
+<div class="wrap-x">
+<table>
+  <tr><th>場面</th><th>操作</th></tr>
+  <tr><td>試合開始</td><td>「進行」タブ → 大会名を入力 →「▶ 開始アナウンス」</td></tr>
+  <tr><td>スタメン発表</td><td>「進行」タブ →「▶ 先攻チームの発表」「▶ 後攻チームの発表」</td></tr>
+  <tr><td>打者の紹介</td><td>「打席」タブ → 攻撃中のチームを選ぶ →「▶ この打者をアナウンス」。再生すると自動で次の打者に進みます</td></tr>
+  <tr><td>選手交代</td><td>「交代」タブ → 種類（代打・代走・投手交代・守備交代）と選手を選ぶ →「▶ 交代アナウンス」</td></tr>
+  <tr><td>試合終了</td><td>「進行」タブ → 両チームの得点を入力 →「▶ 試合終了アナウンス」</td></tr>
+  <tr><td>その他</td><td>整列・ファウルボール注意などの定型文は「進行」タブの下部に。自由な文は「交代」タブの自由入力へ</td></tr>
+</table>
+</div>
+<p>読み上げを途中で止めたいときは「設定」タブの「■ 停止」を押してください。</p>
+<div class="point">
+スピーカーの用意：スマホやパソコンをBluetoothスピーカーや拡声器につなぐと球場全体に聞こえます。事前に接続テストをしておきましょう。
+</div>
+
+<h2>4. 声をプロ品質にする（任意・無料）</h2>
+<p>そのままでも使えますが、Googleの音声合成（無料枠：毎月100万文字）を設定すると、プロのナレーターのような自然な声になります。設定は最初の1回だけ、15分ほどです。</p>
+<ol>
+  <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud</a> にGoogleアカウントでログインし、案内に従って利用登録（本人確認のためクレジットカードの登録が必要ですが、無料枠内なら請求はありません）</li>
+  <li><a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" rel="noopener">Text-to-Speech API のページ</a>で「有効にする」を押す</li>
+  <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">認証情報ページ</a>で「＋認証情報を作成」→「APIキー」→ 表示された <code>AIza…</code> をコピー</li>
+  <li>（推奨）作ったキーを開き「APIの制限」で Cloud Text-to-Speech API のみに制限して保存</li>
+  <li>アプリの「設定」タブ → 音声エンジンを「<strong>Google Cloud 音声</strong>」に変更 → キーを貼り付け → 声は「<strong>Chirp 3: HD</strong>」グループ（Leda・Koreなどお好みで）→「テスト再生」</li>
+</ol>
+<div class="point">
+APIキーは<strong>自分専用</strong>です。あなたのGoogleアカウントに紐づくため、他の人に教えたりSNSに書いたりしないでください。チームの別の担当者が使う場合は、その人が自分のキーを作ります（無料枠は1人ずつ付きます）。
+</div>
+
+<h2>5. よくある質問</h2>
+<div class="box">
+<h3>Q. 料金はかかりますか？</h3>
+<p>アプリ自体は無料です。内蔵音声も無料。Google Cloud音声も月100万文字（打者アナウンス約4万回分）まで無料で、通常の利用で超えることはまずありません。</p>
+<h3>Q. 電波のない球場でも使えますか？</h3>
+<p>内蔵音声なら使えます（設定タブでいつでも切り替え可能）。Google Cloud音声はネット接続が必要です。</p>
+<h3>Q. 名前の読み方が違います</h3>
+<p>「チーム」タブのその選手の「よみ」欄にひらがなで正しい読みを入れて保存してください。</p>
+<h3>Q. 入力したデータが消えました</h3>
+<p>データは端末のブラウザごとに保存されます。別の端末・別のブラウザ・プライベートモードでは引き継がれません。いつも同じ端末の同じブラウザで開いてください。</p>
+<h3>Q. 音が出ません</h3>
+<p>端末の音量・消音モードを確認 → 「設定」タブの「テスト再生」で確認 → それでも出なければページを再読み込みしてください。</p>
+<h3>Q. 文面を元に戻したい</h3>
+<p>「設定」タブの「初期の文面に戻す」、選手データは「チーム」タブの「サンプルに戻す」で戻せます。</p>
+</div>
+
+</main>
+<footer>
+<p>このツールは有志によって作られた無料ツールです。アナウンス文面はお使いの連盟の規定に合わせて調整してください。</p>
+</footer>
+</body>
+</html>
